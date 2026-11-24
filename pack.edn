@@ -5,6 +5,13 @@
 ;; any are missing).
 {:name        "CLJS Demo"
  :slug        "cljs_demo"          ; folder / .mcaddon name
+
+ ;; Prefix for everything this add-on names: commands, dynamic properties,
+ ;; script events.  Unqualified keywords in the library get it
+ ;; (:menu -> "cljs_demo:menu").  Pick something unique, such as your creator
+ ;; initials + "_" + a pack abbreviation, and never change it after release:
+ ;; renaming orphans saved data and breaks existing worlds.
+ :namespace   "cljs_demo"
  :description "A Bedrock add-on written in ClojureScript"
  :version     [0 1 0]
  :min-engine-version [1 21 90]

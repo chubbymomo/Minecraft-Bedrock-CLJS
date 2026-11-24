@@ -1,15 +1,15 @@
 (ns example.main
   "Demo add-on.  In game, try:
-     /demo:menu                open a form
-     /demo:heal @s 10          heal (operators)
-     /scriptevent demo:ping hi
+     /cljs_demo:menu              open a form
+     /cljs_demo:heal @s 10       heal (operators)
+     /scriptevent cljs_demo:ping hi
      use a compass             opens the menu"
   (:require [bedrock.core :as bc]
             [bedrock.commands :as cmd]
             [bedrock.ui :as ui]))
 
 ;; Persisted in the world save as EDN: {player-name visit-count}
-(defonce visits (bc/world-atom :demo/visits {}))
+(defonce visits (bc/world-atom :visits {}))
 
 (defn- greet! [^js player]
   (let [n (get (swap! visits update (.-name player) (fnil inc 0)) (.-name player))]
@@ -54,18 +54,18 @@
            (when (= "minecraft:compass" (.. ev -itemStack -typeId))
              (open-menu! (.-source ev)))))
 
-  (bc/on :system/script-event-receive {:namespaces ["demo"]}
+  (bc/on :system/script-event-receive {:namespaces [bc/NAMESPACE]}
          (fn [^js ev]
            (bc/say "§dpong: " (.-message ev))))
 
-  (cmd/register! {:name :demo/menu
+  (cmd/register! {:name :menu
                   :description "Open the CLJS demo menu"}
                  (fn [{:keys [player]} _]
                    (if player
                      (open-menu! player)
                      "Run this as a player.")))
 
-  (cmd/register! {:name :demo/heal
+  (cmd/register! {:name :heal
                   :description "Heal players"
                   :permission :game-directors
                   :params [[:targets :player-selector]]

@@ -19,14 +19,22 @@
   [s]
   (str/replace (name s) #"-([a-z0-9])" (fn [[_ c]] (str/upper-case c))))
 
+(goog-define ^{:doc "The pack's namespace, from :namespace in pack.edn
+  (injected by bedrock.build)."}
+  NAMESPACE "")
+
 (defn ->id
-  "Namespaced keyword to a Bedrock identifier: :demo/hello -> \"demo:hello\".
-  Strings pass through."
+  "Keyword to a Bedrock identifier.  Unqualified keywords get the pack
+  namespace, qualified ones keep theirs, strings pass through:
+    :hello            -> \"abc_demo:hello\"
+    :minecraft/stone  -> \"minecraft:stone\""
   [k]
   (cond
     (string? k) k
     (namespace k) (str (namespace k) ":" (name k))
-    :else (name k)))
+    (seq NAMESPACE) (str NAMESPACE ":" (name k))
+    :else (throw (ex-info (str "No pack namespace for " k "; set :namespace in pack.edn")
+                          {:id k}))))
 
 (defn ->js
   "clj->js with kebab-case keys turned into camelCase, so option maps read

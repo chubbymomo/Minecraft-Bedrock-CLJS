@@ -16,6 +16,8 @@
   (is (= "scriptEventReceive" (bc/camel :script-event-receive)))
   (is (= "demo:hello" (bc/->id :demo/hello)))
   (is (= "x:y" (bc/->id "x:y")))
+  (is (= "test_ns:visits" (bc/->id :visits)) "unqualified ids get the pack namespace")
+  (is (= "minecraft:stone" (bc/->id :minecraft/stone)))
   (is (= {"nameTag" "a" "checkForBlocks" false}
          (js->clj (bc/->js {:name-tag "a" :check-for-blocks false})))))
 

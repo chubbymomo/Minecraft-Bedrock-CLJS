@@ -173,12 +173,41 @@
 
 (defn- log [& xs] (println (apply str "[bedrock] " xs)))
 
+(defn- valid-namespace! [ns]
+  (when-not (and (string? ns) (re-matches #"[a-z0-9_]+" ns) (not= ns "minecraft"))
+    (throw (ex-info (str "pack.edn :namespace must be lowercase letters, digits and _ "
+                         "(and not \"minecraft\"), e.g. \"abc_mypack\". Got: " (pr-str ns))
+                    {:namespace ns})))
+  ns)
+
+(defn- configure
+  "Pass pack settings the runtime needs into the build as closure defines."
+  [build-state pack]
+  (assoc-in build-state [:compiler-options :closure-defines 'bedrock.core/NAMESPACE]
+            (valid-namespace! (:namespace pack))))
+
+(defn- note-beta-modules! [manifest]
+  (doseq [{:keys [module_name version]} (:dependencies manifest)
+          :when (and version (str/includes? version "beta"))]
+    (log "note: depends on " module_name " " version
+         " (players must enable the Beta APIs experiment)")))
+
+(declare flush!)
+
 (defn pack
   "shadow-cljs :build-hooks entry: (bedrock.build/pack \"pack.edn\")"
-  {:shadow.build/stage :flush}
+  {:shadow.build/stages #{:configure :flush}}
   [build-state pack-file]
-  (let [pack (edn/read-string (slurp pack-file))
-        slug (:slug pack "addon")
+  (let [pack (edn/read-string (slurp pack-file))]
+    ;; Hooks aren't told their stage.  Configure builds a fresh state, so
+    ;; mark it and treat every later call as a flush.
+    (if (::configured build-state)
+      (flush! build-state pack)
+      (-> (configure build-state pack)
+          (assoc ::configured true)))))
+
+(defn- flush! [build-state pack]
+  (let [slug (:slug pack "addon")
         release? (= :release (:shadow.build/mode build-state))
         scripts-dir (io/file (get-in build-state [:shadow.build/config :output-dir]))
         bp-dir (.getParentFile (.getAbsoluteFile scripts-dir))
@@ -196,7 +225,9 @@
     ;; BP: static files from packs/BP, but never let them clobber scripts/
     (copy-tree! (io/file "packs" "BP") bp-dir
                 #(or (= % "manifest.json") (str/starts-with? % "scripts")))
-    (spit (io/file bp-dir "manifest.json") (->json (bp-manifest pack scripts-dir entry rp?)))
+    (let [manifest (bp-manifest pack scripts-dir entry rp?)]
+      (when release? (note-beta-modules! manifest))
+      (spit (io/file bp-dir "manifest.json") (->json manifest)))
 
     (when rp?
       (delete-tree! rp-dir)

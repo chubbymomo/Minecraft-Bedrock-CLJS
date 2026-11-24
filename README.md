@@ -17,7 +17,7 @@ npm run smoke                  # run the compiled add-on against the mocks
 
 | Path | What |
 |---|---|
-| `pack.edn` | Pack name, version, UUIDs, deploy folders. Source of every manifest. |
+| `pack.edn` | Pack name, namespace, version, UUIDs, deploy folders. Source of every manifest. |
 | `packs/BP/`, `packs/RP/` | Static pack files (entities, items, textures…). `packs/RP` is optional; if it exists, an RP is built and the two packs depend on each other. |
 | `src/main/bedrock/` | The library (`core`, `commands`, `ui`) and the build hook (`build.clj`). |
 | `src/addon/` | Your add-on. `example.main/init` is the entry point. |
@@ -34,6 +34,8 @@ npm run smoke                  # run the compiled add-on against the mocks
   for `@minecraft/*` imports and adds each as a dependency, using the version
   from `node_modules`. To target a beta API, `npm i -D @minecraft/server@beta`
   (becomes `"2.x.0-beta"`) or set `:script-modules` in `pack.edn`.
+- **Beta APIs.** Depending on a beta module is allowed, but a release build
+  prints a note, since players then have to enable the Beta APIs experiment.
 - **Release builds are `:advanced`.** Interop on game objects needs `^js` hints
   so Closure doesn't rename properties; missing hints are build *errors*
   (`:infer-warning` is in `:warnings-as-errors`). The smoke test runs the
@@ -46,6 +48,18 @@ npm run smoke                  # run the compiled add-on against the mocks
 
 ## Library
 
+### Namespacing
+
+Set `:namespace` in `pack.edn` once. Anything the library names from an
+unqualified keyword gets it: `:menu` becomes `"cljs_demo:menu"`, and so do
+dynamic-property keys like `(bc/world-atom :scores ...)`. Qualified keywords
+keep their own (`:minecraft/stone`), and strings pass through unchanged. The
+value is also available as `bc/NAMESPACE`. The build rejects an empty or
+`minecraft` namespace. Restart `watch` after changing it, and don't change
+it once worlds exist: saved data is stored under the old IDs.
+
+### API
+
 ```clojure
 (ns my.addon
   (:require [bedrock.core :as bc]
@@ -55,19 +69,19 @@ npm run smoke                  # run the compiled add-on against the mocks
 ;; Events by keyword:  :player-spawn -> world.afterEvents.playerSpawn,
 ;; :before/x, :system/x (system.afterEvents), :system.before/startup
 (bc/on :player-spawn (fn [^js ev] (bc/tell (.-player ev) "hi")))
-(bc/on :system/script-event-receive {:namespaces ["demo"]} handler) ; filter opts, camelCased
+(bc/on :system/script-event-receive {:namespaces [bc/NAMESPACE]} handler) ; filter opts, camelCased
 ;; `on` returns an unsubscribe fn; handler exceptions are logged with ex-data.
 
 ;; Ticks (20/s) instead of setTimeout
 (bc/run-after (bc/seconds->ticks 5) f)  (bc/run-every 20 f)  (bc/run-next f)
 
 ;; Persistent state: EDN in a world dynamic property, loaded at world load
-(defonce scores (bc/world-atom :demo/scores {}))
+(defonce scores (bc/world-atom :scores {}))
 
 ;; Commands, data-driven.  Handler gets {:origin :source :player} and an
 ;; args map.  Runs next tick by default so it may change the world; a
 ;; returned string is sent to the player.
-(cmd/register! {:name :demo/heal :permission :game-directors
+(cmd/register! {:name :heal :permission :game-directors
                 :params [[:targets :player-selector]] :optional [[:amount :integer]]}
                (fn [ctx {:keys [targets amount]}] ...))
 
@@ -97,7 +111,7 @@ Plain interop always works too: `bc/world`, `bc/system`, or require
 ## Not verified yet
 
 Everything above is tested against mocks, not a running game. The first time
-you load it in Bedrock, check that `/demo:menu`, `/demo:heal @s 5`, the
+you load it in Bedrock, check that `/cljs_demo:menu`, `/cljs_demo:heal @s 5`, the
 compass menu and the welcome message work, and that the dev build (many
 files under `scripts/cljs-runtime/`) loads as well as the single-file release.
 

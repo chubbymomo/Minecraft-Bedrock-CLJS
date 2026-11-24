@@ -31,4 +31,5 @@
    :output-dir "target/test"
    :modules {:main {:init-fn bedrock.test-runner/main}}
    :js-options {:js-provider :import}
+   :compiler-options {:closure-defines {bedrock.core/NAMESPACE "test_ns"}}
    :devtools {:enabled false}}}}
