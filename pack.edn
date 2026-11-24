@@ -1,0 +1,33 @@
+;; Pack definition.  bedrock.build turns this into manifest.json files.
+;;
+;; UUIDs identify your pack to the game: keep them stable for the life of the
+;; add-on and give every new add-on fresh ones (the build prints new ones if
+;; any are missing).
+{:name        "CLJS Demo"
+ :slug        "cljs_demo"          ; folder / .mcaddon name
+ :description "A Bedrock add-on written in ClojureScript"
+ :version     [0 1 0]
+ :min-engine-version [1 21 90]
+
+ :bp {:header-uuid "232e7889-0352-4e1a-9193-a7d05977ff99"
+      :data-uuid   "efd6278d-3182-422d-9ecc-093274ef3ce5"
+      :script-uuid "cc3ddf5c-49e3-4cb1-b201-4584ce18c80a"}
+
+ ;; Only used when packs/RP exists.
+ :rp {:header-uuid "a1c2e5c1-c62a-4e21-8e5f-36fb4ec75ab8"
+      :module-uuid "5860857e-a350-426c-92fb-9e7d52b56a5e"}
+
+ ;; Script module dependencies are detected from the compiled imports and
+ ;; versioned from node_modules/@minecraft/*/package.json.  Override here,
+ ;; e.g. to target a beta API: {"@minecraft/server" "2.12.0-beta"}
+ :script-modules {}
+
+ ;; Extra manifest "capabilities", e.g. ["script_eval"].
+ :capabilities []
+
+ ;; Where `watch` copies the assembled packs after every build.  Either set
+ ;; these, or the BEDROCK_BP_DIR / BEDROCK_RP_DIR environment variables.
+ ;; For a dedicated server point them at e.g.
+ ;;   <bds>/development_behavior_packs and <bds>/development_resource_packs
+ :deploy {:behavior-packs nil
+          :resource-packs nil}}

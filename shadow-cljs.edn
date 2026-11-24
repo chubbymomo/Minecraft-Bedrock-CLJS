@@ -1,0 +1,34 @@
+;; shadow-cljs configuration
+{:source-paths ["src/main" "src/addon" "src/test"]
+
+ :dependencies []
+
+ :builds
+ {;; The add-on itself.  `npm run watch` / `npm run release`.
+  ;;
+  ;; - :esm + :js-provider :import leaves `@minecraft/*` as real ES imports,
+  ;;   which is how Bedrock provides its native script modules.
+  ;; - Bedrock has no WebSocket, so shadow's devtools client is disabled;
+  ;;   the dev loop is "save -> hook redeploys pack -> /reload in game".
+  ;; - The build hook assembles target/BP (+ target/RP), writes manifest.json
+  ;;   from pack.edn, deploys to your dev pack folders and, on release,
+  ;;   writes target/<slug>.mcaddon.
+  :addon
+  {:target :esm
+   :output-dir "target/BP/scripts"
+   :modules {:main {:init-fn example.main/init}}
+   :js-options {:js-provider :import}
+   :compiler-options {:output-feature-set :es2020
+                      :infer-externs :auto
+                      :warnings-as-errors {:warning-types #{:infer-warning}}}
+   :devtools {:enabled false}
+   :build-hooks [(bedrock.build/pack "pack.edn")]}
+
+  ;; Unit tests for the library, run under Node against a mock
+  ;; @minecraft/server (see test/register.mjs).  `npm test`.
+  :test
+  {:target :esm
+   :output-dir "target/test"
+   :modules {:main {:init-fn bedrock.test-runner/main}}
+   :js-options {:js-provider :import}
+   :devtools {:enabled false}}}}

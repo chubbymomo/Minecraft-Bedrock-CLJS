@@ -1,0 +1,18 @@
+{
+  "name": "bedrock-cljs",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ClojureScript toolchain and library for Minecraft Bedrock script add-ons",
+  "type": "module",
+  "scripts": {
+    "watch": "shadow-cljs watch addon",
+    "release": "shadow-cljs release addon",
+    "test": "shadow-cljs compile test && node --import ./test/register.mjs target/test/main.js",
+    "smoke": "node --import ./test/register.mjs test/smoke.mjs"
+  },
+  "devDependencies": {
+    "@minecraft/server": "2.11.0",
+    "@minecraft/server-ui": "2.3.0",
+    "shadow-cljs": "3.5.14"
+  }
+}
