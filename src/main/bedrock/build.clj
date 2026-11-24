@@ -38,7 +38,7 @@
        (map? x) (if (empty? x)
                   "{}"
                   (str "{\n"
-                       (str/join ",\n" (for [[k v] x]
+                       (str/join ",\n" (for [[k v] x :when (some? v)]
                                          (str in (json-str (name k)) ": " (->json v in))))
                        "\n" indent "}"))
        (and (sequential? x) (every? number? x)) (str "[" (str/join ", " x) "]")
@@ -131,12 +131,18 @@
                                             (str "  " (pr-str p) " \"" (UUID/randomUUID) "\""))))
                       {:missing missing})))))
 
-(defn- header [pack uuid suffix]
-  {:name (str (:name pack) suffix)
-   :description (:description pack "")
-   :uuid uuid
-   :version (:version pack [1 0 0])
-   :min_engine_version (:min-engine-version pack [1 21 90])})
+(defn- header
+  ([pack uuid suffix] (header pack uuid suffix nil))
+  ([pack uuid suffix pack-scope]
+   (array-map
+    :name (str (:name pack) suffix)
+    :description (:description pack "")
+    :uuid uuid
+    ;; Cooperative add-on guidelines: RPs declare "pack_scope": "world",
+    ;; right after the uuid.
+    :pack_scope pack-scope
+    :version (:version pack [1 0 0])
+    :min_engine_version (:min-engine-version pack [1 21 90]))))
 
 (defn- bp-manifest [pack scripts-dir entry rp?]
   (require-uuids! pack [[:bp :header-uuid] [:bp :data-uuid] [:bp :script-uuid]])
@@ -155,7 +161,7 @@
   (require-uuids! pack [[:rp :header-uuid] [:rp :module-uuid]])
   (let [version (:version pack [1 0 0])]
     {:format_version 2
-     :header (header pack (get-in pack [:rp :header-uuid]) " Resources")
+     :header (header pack (get-in pack [:rp :header-uuid]) " Resources" "world")
      :modules [{:type "resources" :uuid (get-in pack [:rp :module-uuid]) :version version}]
      :dependencies [{:uuid (get-in pack [:bp :header-uuid]) :version version}]}))
 
